@@ -1,0 +1,11 @@
+Options -Indexes
+
+# These files are not web resources. Keep database/schema and local
+# configuration material inaccessible if the backend sits below public webroot.
+<FilesMatch "\.(sql|env|ini|log|bak|old|dist)$">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "^(config\.local\.php|config\.php)$">
+  Require all denied
+</FilesMatch>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChainMind Team Portal — Sign in</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  body.login-body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 20% 20%, #efe7ff, #ffffff 60%); }
+  .login-card { width: 380px; background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 34px; text-align: center; }
+  .login-card img { width: 64px; margin-bottom: 10px; }
+  .login-card h1 { font-size: 19px; margin: 0 0 4px; }
+  .login-card p.sub { color: var(--cm-muted); font-size: 13px; margin: 0 0 18px; }
+  .tabs { display: flex; background: var(--cm-bg); border-radius: 10px; padding: 4px; margin-bottom: 6px; }
+  .tabs button { all: unset; flex: 1; text-align: center; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--cm-muted); }
+  .tabs button.active { background: #fff; color: var(--cm-purple); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .error-msg { color: var(--cm-danger); font-size: 12px; margin-top: 10px; min-height: 16px; }
+  form { text-align: left; }
+  .cm-btn.full { width: 100%; margin-top: 18px; text-align: center; }
+  .link-btn { all: unset; display: block; margin: 12px auto 0; color: var(--cm-purple); cursor: pointer; font-size: 12px; font-weight: 700; }
+</style>
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <img src="assets/logo.png" alt="ChainMind">
+    <h1>ChainMind Team Portal</h1>
+    <p class="sub">Your team's virtual office</p>
+
+    <div class="tabs">
+      <button id="tabLogin" class="active" onclick="switchTab('login')">Sign in</button>
+      <button id="tabRegister" onclick="switchTab('register')">Create account</button>
+    </div>
+
+    <form id="loginForm">
+      <label>Email</label>
+      <input type="email" id="loginEmail" required placeholder="you@chainmind.net">
+      <label>Password</label>
+      <input type="password" id="loginPassword" required placeholder="••••••••">
+      <button type="submit" class="cm-btn full">Sign in</button>
+      <button type="button" class="link-btn" onclick="requestReset()">Forgot your password?</button>
+    </form>
+
+    <form id="registerForm" style="display:none">
+      <label>Full name</label>
+      <input type="text" id="regName" required placeholder="Jane Doe">
+      <label>Email</label>
+      <input type="email" id="regEmail" required placeholder="you@chainmind.net">
+      <label>Password</label>
+      <input type="password" id="regPassword" required minlength="8" placeholder="At least 8 characters">
+      <button type="submit" class="cm-btn full">Create account</button>
+    </form>
+
+    <form id="accessForm" style="display:none">
+      <h3 id="accessTitle" style="margin:12px 0 5px">Set your password</h3>
+      <p id="accessSub" class="sub">Finish setting up your portal access.</p>
+      <label>New password</label>
+      <input type="password" id="accessPassword" required minlength="8" placeholder="At least 8 characters">
+      <label>Confirm password</label>
+      <input type="password" id="accessPassword2" required minlength="8" placeholder="Repeat your password">
+      <button type="submit" class="cm-btn full">Continue to portal</button>
+    </form>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+<script src="js/config.js?v=20260912-2"></script>
+<script>
+(function showLastError() {
+  const err = localStorage.getItem('cm_last_error');
+  if (err) {
+    document.getElementById('errorMsg').textContent = 'Debug: ' + err;
+    localStorage.removeItem('cm_last_error');
+  }
+})();
+
+function switchTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('errorMsg').textContent = '';
+}
+
+const query = new URLSearchParams(window.location.search);
+const inviteToken = query.get('invite');
+const resetToken = query.get('reset');
+if (inviteToken || resetToken) {
+  document.querySelector('.tabs').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('accessForm').style.display = 'block';
+  document.getElementById('accessTitle').textContent = inviteToken ? 'Accept your invite' : 'Choose a new password';
+  document.getElementById('accessSub').textContent = inviteToken ? 'Your workspace is ready. Set a password to join.' : 'This reset link is valid for two hours.';
+}
+
+async function callAuth(action, body) {
+  const result = await cmFetchJson(`auth.php?action=${encodeURIComponent(action)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body),
+  });
+  const { response: res, data } = result;
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+async function requestReset() {
+  const email = prompt('Enter the email on your account:');
+  if (!email) return;
+  try {
+    const data = await callAuth('request_reset', { email });
+    document.getElementById('errorMsg').textContent = data.reset_url ? `Reset link: ${data.reset_url}` : data.message;
+  } catch (err) { document.getElementById('errorMsg').textContent = err.message; }
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  document.getElementById('errorMsg').textContent = '';
+  try {
+    const data = await callAuth('login', {
+      email: document.getElementById('loginEmail').value,
+      password: document.getElementById('loginPassword').value,
+    });
+    localStorage.setItem('cm_token', data.token);
+    localStorage.setItem('cm_user', JSON.stringify(data.user));
+    window.location.href = 'portal.html';
+  } catch (err) {
+    document.getElementById('errorMsg').textContent = err.message;
+  }
+});
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  document.getElementById('errorMsg').textContent = '';
+  try {
+    const data = await callAuth('register', {
+      name: document.getElementById('regName').value,
+      email: document.getElementById('regEmail').value,
+      password: document.getElementById('regPassword').value,
+    });
+    localStorage.setItem('cm_token', data.token);
+    localStorage.setItem('cm_user', JSON.stringify(data.user));
+    window.location.href = 'portal.html';
+  } catch (err) {
+    document.getElementById('errorMsg').textContent = err.message;
+  }
+});
+
+document.getElementById('accessForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const error = document.getElementById('errorMsg');
+  error.textContent = '';
+  const password = document.getElementById('accessPassword').value;
+  if (password !== document.getElementById('accessPassword2').value) { error.textContent = 'Passwords do not match'; return; }
+  try {
+    const action = inviteToken ? 'accept_invite' : 'reset_password';
+    const data = await callAuth(action, { token: inviteToken || resetToken, password });
+    localStorage.setItem('cm_token', data.token);
+    localStorage.setItem('cm_user', JSON.stringify(data.user));
+    window.location.href = 'portal.html';
+  } catch (err) { error.textContent = err.message; }
+});
+</script>
+</body>
+</html>

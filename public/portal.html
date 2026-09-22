@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>ChainMind Team Portal</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="css/theme.css?v=20260916-2">
+</head>
+<body>
+<div class="cm-app">
+  <aside class="cm-sidebar">
+    <div class="cm-brand"><img src="assets/logo.png" alt="ChainMind"><span>ChainMind</span></div>
+    <nav class="cm-nav">
+      <button data-view="dashboard" class="active" onclick="showView('dashboard')">⌂ <span>Overview</span></button>
+      <button data-view="teams" onclick="showView('teams')">♙ <span>Teams</span></button>
+      <button data-view="departments" onclick="showView('departments')">◈ <span>Departments</span></button>
+      <button data-view="tasks" onclick="showView('tasks')">✓ <span>Tasks</span></button>
+      <button data-view="people" data-manager-only onclick="showView('people')">◎ <span>People & roles</span></button>
+      <button data-view="resources" onclick="showView('resources')">▣ <span>Company hub</span></button>
+      <button data-view="admin" id="adminNavBtn" onclick="showView('admin')" style="display:none">⚙ <span>Audit log</span></button>
+      <button onclick="Space.enter()">✦ <span>Virtual space</span></button>
+      <button data-view="avatar" onclick="showView('avatar')">◉ <span>My avatar</span></button>
+    </nav>
+    <div class="cm-clock">
+      <div id="roleStatus" class="cm-role-status">Access: checking…</div>
+      <div id="clockStatus">Checking status…</div>
+      <button id="clockBtn" onclick="toggleClock()">…</button>
+      <button class="cm-signout" onclick="CM.logout()">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="cm-main">
+    <div id="onboardingBanner" class="cm-onboarding"><div><strong>Welcome to your new workspace.</strong><span>Start with a department, invite your team, then meet in the virtual space.</span></div><button class="cm-close" onclick="dismissOnboarding()">×</button></div>
+
+    <section id="view-dashboard" class="cm-view">
+      <div class="cm-header"><div><span class="cm-eyebrow">Company pulse</span><h1>Welcome back<span id="welcomeName"></span></h1><p>Your people, projects, and shared workspace in one place.</p></div><button class="cm-btn" onclick="Space.enter()">Enter virtual space →</button></div>
+      <div class="cm-grid cm-stats" id="dashboardStats"></div>
+      <div class="cm-dashboard-grid">
+        <div class="cm-card"><div class="cm-card-heading"><h3>Announcements</h3><span class="cm-eyebrow">Latest</span></div><div id="announcementList"></div></div>
+        <div class="cm-card"><div class="cm-card-heading"><h3>Upcoming</h3><span class="cm-eyebrow">Calendar</span></div><div id="upcomingEvents"></div></div>
+      </div>
+      <div class="cm-card cm-online"><div class="cm-card-heading"><h3>Who's online</h3><span class="cm-eyebrow">Live roster</span></div><div id="rosterList" class="cm-roster"></div></div>
+    </section>
+
+    <section id="view-teams" class="cm-view" style="display:none">
+      <div class="cm-header"><div><span class="cm-eyebrow">Collaboration</span><h1>Teams</h1><p>Give every initiative a home and a clear owner.</p></div></div>
+      <div class="cm-card cm-inline-form" data-manager-only><input id="teamName" placeholder="Team name"><input id="teamDescription" placeholder="What does this team own?"><select id="teamDepartment" class="department-select"><option value="">Company-wide</option></select><button class="cm-btn" onclick="Teams.openCreate()">Create team</button></div>
+      <div class="cm-grid" id="teamsGrid"></div>
+    </section>
+
+    <section id="view-departments" class="cm-view" style="display:none">
+      <div class="cm-header"><div><span class="cm-eyebrow">Organization</span><h1>Departments</h1><p>Build a structure that fits a decentralized AI company.</p></div></div>
+      <div class="cm-card cm-inline-form" data-manager-only><input id="departmentName" placeholder="Department name"><input id="departmentDescription" placeholder="Purpose and responsibilities"><button class="cm-btn" onclick="Departments.openCreate()">Create department</button></div>
+      <div class="cm-grid" id="departmentsGrid"></div>
+    </section>
+
+    <section id="view-tasks" class="cm-view" style="display:none">
+      <div class="cm-header"><div><span class="cm-eyebrow">Execution</span><h1>Tasks</h1><p>Track the work that moves the company forward.</p></div></div>
+      <div class="cm-card cm-inline-form"><input id="taskTitle" placeholder="Add a task…"><select id="taskPriority"><option value="low">Low priority</option><option value="medium" selected>Medium priority</option><option value="high">High priority</option><option value="urgent">Urgent</option></select><button class="cm-btn" onclick="Tasks.openCreate()">Add task</button></div>
+      <div class="cm-kanban"><div class="cm-kanban-col" data-status="todo"><h3>To do</h3><div class="col-body"></div></div><div class="cm-kanban-col" data-status="in_progress"><h3>In progress</h3><div class="col-body"></div></div><div class="cm-kanban-col" data-status="review"><h3>Review</h3><div class="col-body"></div></div><div class="cm-kanban-col" data-status="done"><h3>Done</h3><div class="col-body"></div></div></div>
+    </section>
+
+    <section id="view-people" class="cm-view" style="display:none">
+      <div class="cm-header"><div><span class="cm-eyebrow">Access management</span><h1>People & roles</h1><p>Create a user, assign their role, and share a secure invite link.</p></div></div>
+      <div class="cm-card cm-create-user"><h3>Invite a teammate</h3><form id="newUserForm" onsubmit="People.create(event)"><div class="form-grid"><div><label>Full name</label><input name="name" required placeholder="Jane Doe"></div><div><label>Work email</label><input name="email" type="email" required placeholder="jane@company.com"></div><div><label>Access role</label><select name="role"><option value="admin">Admin</option><option value="manager">Manager</option><option value="department_lead">Department lead</option><option value="member">Member</option></select></div><div><label>Job title</label><select name="title"><option>CEO</option><option>Lead backend engineer</option><option>Fullstack engineer</option><option>UI/UX designer</option><option>Digital innovation lead</option><option>Marketing lead</option><option>Legal counsel</option><option>Operations lead</option><option>Researcher</option><option>Community manager</option><option>Finance lead</option><option>Member</option></select></div><div><label>Department</label><select name="department_id" id="newUserDepartment"><option value="">No department</option></select></div></div><button class="cm-btn" type="submit">Create & generate invite link</button></form><div id="inviteResult" class="cm-invite-result" style="display:none"><strong>Share this link privately</strong><div><input id="inviteLink" readonly><button class="cm-btn secondary" onclick="navigator.clipboard.writeText(document.getElementById('inviteLink').value);toast('Link copied.')">Copy</button></div><small>Invite links expire after 7 days. The teammate sets their own password.</small></div></div>
+      <div class="cm-card"><div class="cm-card-heading"><h3>Workspace directory</h3><span class="cm-eyebrow">Roles and access</span></div><div id="peopleTable" class="cm-table"></div></div>
+    </section>
+
+    <section id="view-resources" class="cm-view" style="display:none">
+      <div class="cm-header"><div><span class="cm-eyebrow">Company hub</span><h1>Resources, leave & calendar</h1><p>The shared operating layer for the team.</p></div></div>
+      <div class="cm-dashboard-grid">
+        <div class="cm-card"><div class="cm-card-heading"><h3>Shared resources</h3><span class="cm-eyebrow">Links</span></div><form onsubmit="Resources.createResource(event)" class="stack-form"><input name="name" required placeholder="Resource name"><input name="url" type="url" required placeholder="https://…"><input name="description" placeholder="What is it?"><button class="cm-btn" type="submit">Share resource</button></form><div id="resourceList" class="cm-list"></div></div>
+        <div class="cm-card"><div class="cm-card-heading"><h3>Team calendar</h3><span class="cm-eyebrow">Events</span></div><form onsubmit="Resources.createEvent(event)" class="stack-form" data-manager-only><input name="title" required placeholder="Event title"><input name="start_at" type="datetime-local" required><input name="location" placeholder="Location or meeting link"><button class="cm-btn" type="submit">Add event</button></form><div id="eventList" class="cm-list"></div></div>
+      </div>
+      <div class="cm-dashboard-grid">
+        <div class="cm-card"><div class="cm-card-heading"><h3>Request leave</h3><span class="cm-eyebrow">Time off</span></div><form onsubmit="Resources.requestLeave(event)" class="stack-form"><select name="leave_type"><option>Annual leave</option><option>Sick leave</option><option>Personal leave</option></select><div class="form-grid"><input name="start_date" type="date" required><input name="end_date" type="date" required></div><textarea name="reason" placeholder="Reason (optional)"></textarea><button class="cm-btn" type="submit">Submit request</button></form></div>
+        <div class="cm-card"><div class="cm-card-heading"><h3>Leave requests</h3><span class="cm-eyebrow">Team status</span></div><div id="leaveList" class="cm-list"></div></div>
+      </div>
+    </section>
+
+    <section id="view-admin" class="cm-view" style="display:none"><div class="cm-header"><div><span class="cm-eyebrow">Governance</span><h1>Audit log</h1><p>A transparent record of workspace changes.</p></div></div><div class="cm-card"><div id="auditList" class="cm-list"></div></div></section>
+
+    <section id="view-avatar" class="cm-view" style="display:none"><div class="cm-header"><div><span class="cm-eyebrow">Identity</span><h1>My avatar</h1><p>This is how you appear in the virtual space.</p></div></div><div class="cm-dashboard-grid"><div class="cm-card cm-avatar-editor"><label>Display name</label><input id="avName"><label>Body color</label><input id="avColor" type="color"><label>Body shape</label><select id="avShape"><option value="capsule">Soft</option><option value="block">Structured</option></select><button class="cm-btn" onclick="AvatarPanel.save()">Save avatar</button></div><div class="cm-card"><h3>Change password</h3><p>Keep your portal access private.</p><form class="stack-form" onsubmit="AvatarPanel.changePassword(event)"><input name="current_password" type="password" required placeholder="Current password"><input name="new_password" type="password" minlength="8" required placeholder="New password"><button class="cm-btn" type="submit">Update password</button></form></div></div></section>
+  </main>
+</div>
+
+<div id="cmToast" class="cm-toast"></div>
+<div id="cm-space-overlay">
+  <canvas id="cm-space-canvas"></canvas>
+  <div class="cm-space-hud"><div class="cm-space-panel">WASD / arrows or the movement pad to move · drag/swipe to turn and tilt</div><div class="cm-space-panel" id="spacePeopleCount">1 person here</div></div>
+  <div id="spaceMediaNotice" class="cm-media-notice"></div>
+  <div class="cm-mobile-controls" aria-label="Mobile movement controls">
+    <button type="button" class="cm-move-btn up" id="mobileMoveUp" aria-label="Move forward">↑</button>
+    <button type="button" class="cm-move-btn left" id="mobileMoveLeft" aria-label="Move left">←</button>
+    <button type="button" class="cm-move-btn down" id="mobileMoveDown" aria-label="Move backward">↓</button>
+    <button type="button" class="cm-move-btn right" id="mobileMoveRight" aria-label="Move right">→</button>
+  </div>
+  <div class="cm-space-controls"><button class="cm-icon-btn" id="micBtn" onclick="Space.toggleMic()">🎤</button><button class="cm-icon-btn" id="camBtn" onclick="Space.toggleCam()">📷</button><button class="cm-icon-btn" id="groupCallBtn" onclick="Space.toggleGroupCall()">👥</button><button class="cm-icon-btn leave" onclick="Space.exit()">✕</button></div>
+  <video id="cm-local-video" class="cm-video-hidden" autoplay muted playsinline></video>
+</div>
+
+<script src="js/config.js?v=20260916-2"></script><script src="js/api.js?v=20260916-2"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script src="js/app.js?v=20260916-2"></script><script type="module" src="js/space.js?v=20260916-2"></script>
+</body>
+</html>
